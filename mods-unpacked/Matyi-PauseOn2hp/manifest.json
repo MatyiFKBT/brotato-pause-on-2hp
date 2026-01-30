@@ -2,7 +2,7 @@
 	"name": "PauseOn2hp",
 	"namespace": "Matyi",
 	"version_number": "1.0.1",
-	"description": "Pauses the game when the player has 2 hp left.",
+	"description": "Pauses the game when the player would die (0 hp), preventing death.",
 	"website_url": "https://github.com/matyifkbt/brotato-pause-on-2hp",
 	"dependencies": [
 
