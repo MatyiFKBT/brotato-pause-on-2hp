@@ -1,5 +1,8 @@
 extends "res://entities/units/player/player.gd"
 
+var _pending_lethal_damage = null
+var _pending_damage_args = null
+
 func take_damage(value: int, args: TakeDamageArgs) -> Array:
 	
 	# 1. Store current health before any damage calculation
@@ -19,11 +22,19 @@ func take_damage(value: int, args: TakeDamageArgs) -> Array:
 		var pause_successful = try_pause_game()
 		
 		if pause_successful:
-			print("DEBUG: Game successfully paused - death prevented!")
-			# Still call the original function but player should survive due to pause
-			var result = .take_damage(value, args)
-			print("DEBUG: Damage processed while paused. Final HP: %s" % [str(current_stats.health)])
-			return result
+			print("DEBUG: Game successfully paused - waiting for player to resume...")
+			# Store the damage to apply when player resumes
+			_pending_lethal_damage = value
+			_pending_damage_args = args
+			
+			# Wait for the game to unpause (in the _process or _physics_process loop)
+			if not is_connected("tree_exited", self, "_apply_pending_lethal_damage"):
+				# Set up a one-time check for when the game unpauses
+				var main_node = get_tree().get_current_scene()
+				if main_node and main_node.has_signal("paused_changed"):
+					main_node.connect("paused_changed", self, "_on_game_unpaused", [], CONNECT_ONESHOT)
+			
+			return [0, 0, false]  # Return safely while paused
 		else:
 			print("DEBUG: WARNING - Could not pause game! Damage will be applied normally.")
 			# Fallback: apply damage normally if pause failed
@@ -97,3 +108,12 @@ func try_pause_game() -> bool:
 	else:
 		print("DEBUG: Method 4 FAILED - All pause methods failed!")
 		return false
+
+# Callback when game unpauses - apply the lethal damage
+func _on_game_unpaused():
+	if _pending_lethal_damage != null and _pending_damage_args != null:
+		print("DEBUG: Player resumed! Applying lethal damage...")
+		var result = .take_damage(_pending_lethal_damage, _pending_damage_args)
+		print("DEBUG: Lethal damage applied. Final HP: %s" % [str(current_stats.health)])
+		_pending_lethal_damage = null
+		_pending_damage_args = null
