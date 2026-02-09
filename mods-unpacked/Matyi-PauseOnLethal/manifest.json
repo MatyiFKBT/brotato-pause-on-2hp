@@ -1,8 +1,8 @@
 {
 	"name": "PauseOnLethal",
 	"namespace": "Matyi",
-	"version_number": "2.1.0",
-	"description": "Pauses the game when the player would die (0 hp), preventing death.",
+	"version_number": "2.2.0",
+	"description": "Pauses the game when the player would die (0 hp), preventing death. Includes restart round button when paused due to lethal damage.",
 	"website_url": "https://github.com/matyifkbt/brotato-pause-on-2hp",
 	"dependencies": [
 

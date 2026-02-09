@@ -2,6 +2,11 @@ extends "res://entities/units/player/player.gd"
 
 var _pending_lethal_damage = null
 var _pending_damage_args = null
+var _lethal_pause_active = false
+
+# Signal to notify menu system when lethal pause is active
+signal lethal_pause_activated
+signal lethal_pause_deactivated
 
 func take_damage(value: int, args: TakeDamageArgs) -> Array:
 	
@@ -26,6 +31,10 @@ func take_damage(value: int, args: TakeDamageArgs) -> Array:
 			# Store the damage to apply when player resumes
 			_pending_lethal_damage = value
 			_pending_damage_args = args
+			_lethal_pause_active = true
+			
+			# Emit signal to activate restart round button
+			emit_signal("lethal_pause_activated")
 			
 			# Wait for the game to unpause (in the _process or _physics_process loop)
 			if not is_connected("tree_exited", self, "_apply_pending_lethal_damage"):
@@ -117,3 +126,31 @@ func _on_game_unpaused():
 		print("DEBUG: Lethal damage applied. Final HP: %s" % [str(current_stats.health)])
 		_pending_lethal_damage = null
 		_pending_damage_args = null
+		_lethal_pause_active = false
+		emit_signal("lethal_pause_deactivated")
+
+# Function to restart the current round
+func restart_current_round():
+	print("DEBUG: Restarting current round...")
+	
+	# Clear pending damage state
+	_pending_lethal_damage = null
+	_pending_damage_args = null
+	_lethal_pause_active = false
+	
+	# Reset health to full
+	current_stats.health = max_stats.health
+	print("DEBUG: Health restored to: %s" % [str(current_stats.health)])
+	
+	# Use the existing retry wave functionality
+	RunData.reset_to_start_wave_state()
+	RunData.retries += 1
+	
+	# Unpause and restart the scene
+	get_tree().paused = false
+	var _error = get_tree().change_scene(MenuData.game_scene)
+	print("DEBUG: Round restarted successfully")
+
+# Check if lethal pause is currently active
+func is_lethal_pause_active() -> bool:
+	return _lethal_pause_active
